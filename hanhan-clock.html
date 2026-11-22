@@ -187,6 +187,9 @@
   .tcancel{display:none;margin:8px auto 0;border:0;background:transparent;color:var(--ink-soft);
         font:inherit;font-size:12.5px;text-decoration:underline;cursor:pointer}
   .timer-live .tcancel{display:block}
+  .tdone{display:none;margin:10px auto 2px;border:0;padding:9px 20px;border-radius:999px;background:linear-gradient(135deg,#ff9fb6,#ffc27a);color:#fff;font:inherit;font-size:13px;font-weight:700;letter-spacing:.02em;cursor:pointer;box-shadow:0 12px 22px -14px rgba(255,125,156,.95);transition:transform .15s}
+  .timer-live .tdone{display:block}
+  .tdone:active{transform:scale(.96)}
 
   /* ---------- 选科目 & 柱子提升动画 ---------- */
 
@@ -594,7 +597,8 @@
       </svg>
       <div class="timer-num" id="timerNum">00:00</div>
     </div>
-    <button class="tcancel" type="button" id="timerCancel">取消计时</button>
+    <button class="tdone" type="button" id="timerDone">⚡ 提前完成</button>
+        <button class="tcancel" type="button" id="timerCancel">取消计时</button>
     <div class="t-confirm hidden" id="tConfirm">
       <div class="ico">⏰</div>
       <p id="tcText"></p>
@@ -1349,6 +1353,34 @@ return '<button class="tbtn" type="button" data-min="' + m + '">' +
     if (tCursor) { clearInterval(tCursor); tCursor = null; }
     setWriting(false);
   }
+
+  function finishEarly() {
+    if (!tTotal || !tSub) { toast('先点一个时长，选好科目再开始～'); return; }
+    var left = Math.max(0, tEnd - Date.now());
+    var total = tMin || Math.round(tTotal / 60000);
+    var doneMin = Math.max(1, Math.round(total - left / 60000));
+    var restMin = Math.max(0, Math.round(left / 60000));
+    var half = Math.max(1, Math.round(total / 2));
+    var okHalf = doneMin >= half;
+    var gainMin = okHalf ? (total + restMin) : doneMin;
+    var sub = tSub;
+    stopTimer();
+    clearTimerStore();
+    closeAsk();
+    tCard.classList.remove('timer-live');
+    markActive(0);
+    tNum.textContent = '00:00';
+    tNum.style.fontSize = '27px';
+    tSub = '';
+    addLog(true);
+    var gxp = boostSubject(sub, gainMin);
+    if (!gxp) return;
+    if (okHalf) toast(sub + ' 提前完成 +' + gxp + '（' + total + ' 分钟 + 剩下 ' + restMin + ' 分钟奖励）⚡');
+    else toast(sub + ' 记上啦 +' + gxp + '（做满一半时间才有额外奖励，坐久点更划算）');
+  }
+
+  var tDoneBtn = $('#timerDone');
+  if (tDoneBtn) tDoneBtn.addEventListener('click', finishEarly);
 
   function cancelTimer() {
     stopTimer();
